@@ -1,20 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, db } from './firebase';
-import { User, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
-interface UserProfile {
-  uid: string;
-  username: string;
-  displayName: string;
-  photoURL?: string;
-  historyPrivacy: 'public' | 'followers' | 'private';
-  onboardingCompleted: boolean;
-  preferences?: {
-    genres?: string[];
-    accessibility?: string[];
-    services?: string[];
-  };
+// Fake types
+export interface User { uid: string; email: string; displayName: string; photoURL: string; }
+export interface UserProfile extends User {
+  username: string; historyPrivacy: 'public' | 'followers' | 'private'; onboardingCompleted: boolean; preferences?: any;
 }
 
 interface AuthContextType {
@@ -31,24 +20,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
-      
-      if (u) {
-        const unsubProfile = onSnapshot(doc(db, 'users', u.uid), (docSnap) => {
-          if (docSnap.exists()) {
-            setProfile(docSnap.data() as UserProfile);
-          }
-          setLoading(false);
-        });
-        return () => unsubProfile();
+    // Fake login
+    const fakeUser = { uid: 'mock_123', email: 'test@example.com', displayName: 'Mock User', photoURL: '' };
+    setUser(fakeUser);
+    
+    // Simulate loading
+    setTimeout(() => {
+      // By default mock user goes to onboarding.
+      // If we used a simulated login, we would have user profile loaded.
+      const savedProfile = localStorage.getItem('mockProfile');
+      if (savedProfile) {
+        setProfile(JSON.parse(savedProfile));
       } else {
-        setProfile(null);
-        setLoading(false);
+        setProfile({ ...fakeUser, username: '', historyPrivacy: 'public', onboardingCompleted: false });
       }
-    });
+      setLoading(false);
+    }, 500);
 
-    return () => unsubscribe();
+    // Provide a way to bypass update profile globally for the onboarding screen
+    (window as any).mockUpdateProfile = (newProfileData: any) => {
+      const merged = { ...fakeUser, ...newProfileData };
+      setProfile(merged);
+      localStorage.setItem('mockProfile', JSON.stringify(merged));
+    };
+
+    return () => {};
   }, []);
 
   return (

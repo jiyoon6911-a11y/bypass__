@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../lib/auth-context';
-import { auth, db, handleFirestoreError, logout, OperationType } from '../../lib/firebase';
-import { collection, query, where, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc, orderBy, serverTimestamp } from 'firebase/firestore';
 import { Settings, LogOut, UserMinus, UserPlus, Lock, Unlock, Users, ChevronLeft, Search, UserCircle, RefreshCcw, Edit3, Music } from 'lucide-react';
 import { BottomSheet } from '../../components/ui/BottomSheet';
 import { cn } from '../../lib/utils';
@@ -20,7 +18,7 @@ export function AppProfile() {
   const [targetProfile, setTargetProfile] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [privacySetting, setPrivacySetting] = useState<'public'|'followers'|'private'>(profile?.historyPrivacy || 'public');
@@ -40,121 +38,53 @@ export function AppProfile() {
   useEffect(() => {
     if (!targetUserId) return;
     
-    async function loadData() {
-      setLoading(true);
-      try {
-        if (isMyProfile) {
-          setTargetProfile(profile);
-          setEditDisplayName(profile?.displayName || '');
-          setEditPhotoURL(profile?.photoURL || '');
-          setEditGenres(profile?.preferences?.genres || []);
-          const q = query(collection(db, 'reviews'), where('authorId', '==', user?.uid), orderBy('createdAt', 'desc'));
-          const snap = await getDocs(q);
-          setReviews(snap.docs.map(d => ({id: d.id, ...d.data()})));
-        } else {
-          const docSnap = await getDoc(doc(db, 'users', targetUserId!));
-          if (docSnap.exists()) {
-            setTargetProfile(docSnap.data());
-          }
-          const followId = `${user?.uid}_${targetUserId}`;
-          const followSnap = await getDoc(doc(db, 'follows', followId));
-          setIsFollowing(followSnap.exists());
-          try {
-            const reqQuery = query(collection(db, 'reviews'), where('authorId', '==', targetUserId));
-            const revSnap = await getDocs(reqQuery);
-            setReviews(revSnap.docs.map(d => ({id: d.id, ...d.data()})));
-          } catch (err: any) {
-             setReviews([]); 
-          }
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+    // Mock implementation for disconnected firebase
+    if (isMyProfile) {
+      setTargetProfile(profile);
+      setEditDisplayName(profile?.displayName || '');
+      setEditPhotoURL(profile?.photoURL || '');
+      setEditGenres(profile?.preferences?.genres || []);
+      setReviews([]);
+    } else {
+      setTargetProfile({ displayName: 'Unknown', username: 'user' });
+      setReviews([]);
+      setIsFollowing(false);
     }
-    
-    loadData();
   }, [targetUserId, isMyProfile, profile, user]);
 
   const handleSearchUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchKeyword.trim()) return;
-    setSearching(true);
-    setSearchResult(null);
-    try {
-      const q = query(collection(db, 'users'), where('username', '==', searchKeyword.trim()));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        setSearchResult({ id: snap.docs[0].id, ...snap.docs[0].data() });
-      } else {
-        setSearchResult('not_found');
-      }
-    } catch {
-      setSearchResult('not_found');
-    } finally {
-      setSearching(false);
-    }
+    setSearchResult('not_found'); // Mock search
   };
 
   const handleFollowToggle = async () => {
     if (!targetUserId || !user) return;
-    const followId = `${user.uid}_${targetUserId}`;
-    try {
-      if (isFollowing) {
-        await deleteDoc(doc(db, 'follows', followId));
-        setIsFollowing(false);
-      } else {
-        await setDoc(doc(db, 'follows', followId), {
-          followerId: user.uid,
-          followingId: targetUserId,
-          createdAt: new Date()
-        });
-        setIsFollowing(true);
-      }
-    } catch (error) {
-      handleFirestoreError(error, isFollowing ? OperationType.DELETE : OperationType.CREATE, `follows/${followId}`);
-    }
+    setIsFollowing(!isFollowing);
   };
 
   const handlePrivacyChange = async (newPrivacy: 'public'|'followers'|'private') => {
-    if (!user) return;
-    try {
-      await updateDoc(doc(db, 'users', user.uid), { historyPrivacy: newPrivacy, updatedAt: serverTimestamp() });
-      setPrivacySetting(newPrivacy);
-    } catch (err) {
-      console.error('Failed to update privacy', err);
-    }
+    setPrivacySetting(newPrivacy);
   };
 
   const handleSaveProfile = async () => {
     if (!user || !editDisplayName.trim()) return;
     setIsSaving(true);
-    try {
-      await updateDoc(doc(db, 'users', user.uid), {
-        displayName: editDisplayName.trim(),
-        photoURL: editPhotoURL,
-        'preferences.genres': editGenres,
-        updatedAt: serverTimestamp()
-      });
+    setTimeout(() => {
       setEditProfileOpen(false);
-    } catch (err) {
-      console.error(err);
-      alert('프로필 수정 중 오류가 발생했습니다.');
-    } finally {
       setIsSaving(false);
-    }
+    }, 500);
   };
 
   const handleDeleteAccount = async () => {
     if (confirm("정말로 계정을 삭제하시겠습니까? 돌이킬 수 없습니다.")) {
-       try {
-         await user?.delete();
-       } catch (err) {
-         alert("계정 삭제에 실패했습니다. 재로그인 후 다시 시도해주세요.");
-       }
+       alert("더미 모드: 계정 삭제 시뮬레이션입니다.");
     }
   }
+
+  const logout = () => {
+    window.location.href = '/';
+  };
 
   if (loading) {
     return <div className="min-h-screen bg-black text-cyan-400 flex items-center justify-center font-bold">로딩 중...</div>;

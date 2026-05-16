@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../lib/auth-context';
-import { db } from '../../lib/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, ChevronLeft, Check, Music, Accessibility, HeartHandshake, UserCircle, RefreshCcw } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -35,6 +33,9 @@ export function AppOnboarding() {
     }
   };
 
+  // Mock implementation inside since we removed Firebase
+  const mockForceUpdateProfile = (window as any).mockUpdateProfile;
+
   const handleNextStep = async () => {
     if (step === 1) {
       if (!username || !displayName) {
@@ -42,49 +43,36 @@ export function AppOnboarding() {
         return;
       }
       setCheckingUsername(true);
-      try {
-        const q = query(collection(db, 'users'), where('username', '==', username));
-        const snap = await getDocs(q);
-        if (!snap.empty && snap.docs[0].id !== user?.uid) {
-          setUsernameError('이미 사용 중인 아이디입니다.');
-          setCheckingUsername(false);
-          return;
-        }
+      setTimeout(() => {
         setUsernameError('');
         setStep(2);
-      } catch (err) {
-        console.error(err);
-        setUsernameError('아이디 중복 확인 중 오류가 발생했습니다.');
-      } finally {
         setCheckingUsername(false);
-      }
+      }, 500);
     } else {
       setStep(step + 1);
     }
   };
 
   const handleComplete = async () => {
-    if (!user) return;
     setIsSubmitting(true);
-    try {
-      await updateDoc(doc(db, 'users', user.uid), {
-        username,
-        displayName,
-        photoURL,
-        onboardingCompleted: true,
-        preferences: {
-          genres,
-          accessibility: accessibilities,
-          services
-        },
-        updatedAt: serverTimestamp()
-      });
-      // Context will update automatically
-    } catch (e) {
-      console.error(e);
-      alert('설정 저장 중 오류가 발생했습니다.');
+    setTimeout(() => {
+        if(mockForceUpdateProfile) {
+            mockForceUpdateProfile({
+              username,
+              displayName,
+              photoURL,
+              onboardingCompleted: true,
+              preferences: {
+                genres,
+                accessibility: accessibilities,
+                services
+              }
+            });
+        } else {
+           window.location.href = '/app';
+        }
       setIsSubmitting(false);
-    }
+    }, 800);
   };
 
   const isNextDisabled = () => {
