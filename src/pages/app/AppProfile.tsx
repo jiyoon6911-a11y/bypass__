@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../lib/auth-context';
-import { auth, db, handleFirestoreError, logout, OperationType } from '../../lib/firebase';
+// Removed useAuth import
+import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc, orderBy, serverTimestamp } from 'firebase/firestore';
 import { Settings, LogOut, UserMinus, UserPlus, Lock, Unlock, Users, ChevronLeft, Search, UserCircle, RefreshCcw, Edit3, Music } from 'lucide-react';
 import { BottomSheet } from '../../components/ui/BottomSheet';
@@ -12,7 +12,15 @@ const GENRES = ['뮤지컬', '연극', '클래식', '콘서트', '오페라', '�
 export function AppProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  // Mocked user and profile
+  const user = { uid: 'visitor' };
+  const profile = { 
+    displayName: '방문자', 
+    username: 'visitor', 
+    historyPrivacy: 'public' as const,
+    photoURL: '',
+    preferences: { genres: ['뮤지컬'] }
+  };
   
   const isMyProfile = !userId || userId === user?.uid;
   const targetUserId = isMyProfile ? user?.uid : userId;
@@ -118,47 +126,19 @@ export function AppProfile() {
   };
 
   const handlePrivacyChange = async (newPrivacy: 'public'|'followers'|'private') => {
-    if (!user) return;
-    try {
-      await updateDoc(doc(db, 'users', user.uid), { historyPrivacy: newPrivacy, updatedAt: serverTimestamp() });
-      setPrivacySetting(newPrivacy);
-    } catch (err) {
-      console.error('Failed to update privacy', err);
-    }
+    alert('데모 모드에서는 설정을 변경할 수 없습니다.');
   };
 
   const handleSaveProfile = async () => {
-    if (!user || !editDisplayName.trim()) return;
-    setIsSaving(true);
-    try {
-      await updateDoc(doc(db, 'users', user.uid), {
-        displayName: editDisplayName.trim(),
-        photoURL: editPhotoURL,
-        'preferences.genres': editGenres,
-        updatedAt: serverTimestamp()
-      });
-      setEditProfileOpen(false);
-    } catch (err) {
-      console.error(err);
-      alert('프로필 수정 중 오류가 발생했습니다.');
-    } finally {
-      setIsSaving(false);
-    }
+    alert('데모 모드에서는 프로필을 저장할 수 없습니다.');
   };
 
   const handleDeleteAccount = async () => {
-    if (confirm("정말로 계정을 삭제하시겠습니까? 돌이킬 수 없습니다.")) {
-       try {
-         await auth.currentUser?.delete();
-         navigate('/');
-       } catch (err) {
-         alert("계정 삭제에 실패했습니다. 재로그인 후 다시 시도해주세요.");
-       }
-    }
-  }
+    alert('데모 모드입니다.');
+  };
 
   const logout = () => {
-    window.location.href = '/';
+    navigate('/');
   };
 
   if (loading) {

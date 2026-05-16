@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { cn } from '../../lib/utils';
 import { BottomSheet } from '../../components/ui/BottomSheet';
-import { useAuth } from '../../lib/auth-context';
+// Removed useAuth import
 
 const BASE_SHOWS = [
   { id: 1, type: '뮤지컬', title: '오페라의 유령', venue: '샤롯데씨어터', distance: '1.2km', badges: ['휠체어', '자막'], imgGradient: 'from-cyan-400/20 to-zinc-900', imgClass: 'bg-zinc-800' },
@@ -46,7 +46,17 @@ const SHOWS = [...BASE_SHOWS, ...GENERATED_SHOWS];
 
 export function AppHome() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  // Removed useAuth
+  const profile = {
+    displayName: '방문자',
+    username: 'visitor',
+    onboardingCompleted: true,
+    preferences: {
+      genres: ['뮤지컬', '연극'],
+      accessibility: ['휠체어 접근성', '자막 제공'],
+      services: []
+    }
+  };
   
   const [activeTag, setActiveTag] = useState('전체');
   

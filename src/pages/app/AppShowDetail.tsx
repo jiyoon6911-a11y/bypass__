@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Info, MapPin, Calendar, Users, ExternalLink, Ticket, Settings as SettingsIcon, ShieldCheck, Accessibility, Star, MessageSquare } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { useAuth } from '../../lib/auth-context';
+// Removed useAuth import
 
 export function AppShowDetail() {
   const { showId } = useParams();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  // Removed useAuth
+  const profile = { displayName: '방문자' };
   
   const [vrMode, setVrMode] = useState(false);
 

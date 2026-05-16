@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Calendar as CalendarIcon, MapPin, Heart, ChevronRight, Ticket as TicketIcon, Link as LinkIcon, CalendarDays, ExternalLink, Bookmark } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../lib/auth-context';
+// Removed useAuth import
 import { BottomSheet } from '../../components/ui/BottomSheet';
 
 // Dummy data for prototype
@@ -25,7 +25,8 @@ const PROVIDERS = [
 ];
 
 export function AppTickets() {
-  const { profile } = useAuth();
+  // Removed useAuth
+  const profile = { displayName: '방문자' };
   
   const [myTickets, setMyTickets] = useState(INITIAL_TICKETS);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
