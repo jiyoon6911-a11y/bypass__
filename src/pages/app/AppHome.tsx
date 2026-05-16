@@ -399,7 +399,7 @@ export function AppHome() {
             {recommendedShows.map((show) => (
               <Link
                 key={show.id}
-                to="/app/tickets"
+                to={`/app/show/${show.id}`}
                 onClick={() => speak(`${show.title}. ${show.venue}. 추천 점수 ${show.score}점.`)}
                 className="snap-start shrink-0 w-[240px] bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden hover:border-cyan-400/50 transition-colors block"
               >
@@ -447,7 +447,7 @@ export function AppHome() {
           {[...SHOWS].reverse().slice(0, 5).map((show) => (
             <Link
               key={show.id}
-              to="/app/tickets"
+              to={`/app/show/${show.id}`}
               onClick={() => speak(`${show.title}. ${show.venue}.`)}
               className="snap-start shrink-0 w-[180px] bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden hover:border-cyan-400/50 transition-colors block group"
             >
@@ -482,7 +482,7 @@ export function AppHome() {
             filteredShows.map((show) => (
               <Link 
                 key={show.id} 
-                to="/app/tickets"
+                to={`/app/show/${show.id}`}
                 onClick={() => speak(`${show.title}. ${show.venue}. 현재 위치에서 ${show.distance} 거리에 있습니다. 제공되는 서비스는 ${show.badges.join(', ')} 입니다.`)}
                 className="flex gap-4 bg-zinc-900/50 p-3 rounded-2xl border border-zinc-800/50 hover:border-cyan-400/50 transition-colors"
                 aria-label={`${show.title} 공연 페이지로 이동`}

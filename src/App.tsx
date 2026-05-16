@@ -4,6 +4,7 @@ import { AppHome } from './pages/app/AppHome';
 import { AppMap } from './pages/app/AppMap';
 import { AppServices } from './pages/app/AppServices';
 import { AppTickets } from './pages/app/AppTickets';
+import { AppShowDetail } from './pages/app/AppShowDetail';
 import { AppSupporterRecruit } from './pages/app/AppSupporterRecruit';
 import { AppLogin } from './pages/app/AppLogin';
 import { AppProfile } from './pages/app/AppProfile';
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="map" element={<AppMap />} />
           <Route path="services" element={<AppServices />} />
           <Route path="tickets" element={<AppTickets />} />
+          <Route path="show/:showId" element={<AppShowDetail />} />
           <Route path="supporters" element={<AppSupporterRecruit />} />
           <Route path="profile" element={<AppProfile />} />
           <Route path="profile/:userId" element={<AppProfile />} />
