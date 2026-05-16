@@ -4,7 +4,7 @@ export const loginWithGoogle = async () => {
 };
 
 export const logout = async () => {
-    localStorage.removeItem('mockProfile');
+    localStorage.removeItem('mockLoggedIn');
     window.location.reload();
 };
 

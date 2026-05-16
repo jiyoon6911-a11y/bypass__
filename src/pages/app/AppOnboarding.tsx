@@ -15,8 +15,17 @@ export function AppOnboarding() {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(profile?.username || '');
   const [displayName, setDisplayName] = useState(profile?.displayName || '');
+  
+  React.useEffect(() => {
+    if (profile?.username) {
+      setUsername(profile.username);
+    }
+    if (profile?.displayName && !displayName) {
+      setDisplayName(profile.displayName);
+    }
+  }, [profile]);
   const [photoURL, setPhotoURL] = useState(profile?.photoURL || '');
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [usernameError, setUsernameError] = useState('');
@@ -164,20 +173,14 @@ export function AppOnboarding() {
 
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between ml-1">
-                    <label className="text-xs font-bold text-zinc-400">아이디 (영문, 숫자만)</label>
-                    <button 
-                      onClick={() => setUsername(`user_${Math.random().toString(36).substring(2, 8)}`)}
-                      className="text-[10px] font-bold text-cyan-400 flex items-center gap-1"
-                    >
-                      <RefreshCcw className="w-3 h-3" /> 랜덤
-                    </button>
+                    <label className="text-xs font-bold text-zinc-400">아이디</label>
                   </div>
                   <input
                     type="text"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9]/g, ''))}
-                    placeholder="unique_id"
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3.5 text-white placeholder:text-zinc-600 focus:outline-none focus:border-cyan-400 transition-colors font-medium"
+                    readOnly
+                    disabled
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3.5 text-zinc-500 cursor-not-allowed transition-colors font-medium"
                   />
                   {usernameError && <p className="text-xs font-bold text-red-500 ml-1">{usernameError}</p>}
                 </div>

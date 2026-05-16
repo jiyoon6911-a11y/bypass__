@@ -20,28 +20,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fake login
-    const fakeUser = { uid: 'mock_123', email: 'test@example.com', displayName: 'Mock User', photoURL: '' };
-    setUser(fakeUser);
+    // Check mock logged in state
+    const currentId = localStorage.getItem('mockLoggedIn');
+    const fakeUser = currentId ? { uid: `mock_${currentId}`, email: `${currentId}@example.com`, displayName: 'Mock User', photoURL: '' } : null;
     
     // Simulate loading
     setTimeout(() => {
-      // By default mock user goes to onboarding.
-      // If we used a simulated login, we would have user profile loaded.
-      const savedProfile = localStorage.getItem('mockProfile');
-      if (savedProfile) {
-        setProfile(JSON.parse(savedProfile));
+      if (fakeUser) {
+        setUser(fakeUser);
+        const savedProfile = localStorage.getItem(`mockProfile_${currentId}`);
+        if (savedProfile) {
+          setProfile(JSON.parse(savedProfile));
+        } else {
+          setProfile({ ...fakeUser, username: currentId as string, historyPrivacy: 'public', onboardingCompleted: false });
+        }
       } else {
-        setProfile({ ...fakeUser, username: '', historyPrivacy: 'public', onboardingCompleted: false });
+        setUser(null);
+        setProfile(null);
       }
       setLoading(false);
     }, 500);
 
     // Provide a way to bypass update profile globally for the onboarding screen
     (window as any).mockUpdateProfile = (newProfileData: any) => {
-      const merged = { ...fakeUser, ...newProfileData };
+      if (!currentId) return;
+      const baseUser = { uid: `mock_${currentId}`, email: `${currentId}@example.com`, displayName: 'Mock User', photoURL: '' };
+      const merged = { ...baseUser, ...newProfileData };
       setProfile(merged);
-      localStorage.setItem('mockProfile', JSON.stringify(merged));
+      localStorage.setItem(`mockProfile_${currentId}`, JSON.stringify(merged));
     };
 
     return () => {};
@@ -49,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ user, profile, loading }}>
-      {children}
+        {children}
     </AuthContext.Provider>
   );
 }
