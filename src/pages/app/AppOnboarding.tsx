@@ -27,7 +27,6 @@ export function AppOnboarding() {
     }
   }, [profile]);
   const [photoURL, setPhotoURL] = useState(profile?.photoURL || '');
-  const [checkingUsername, setCheckingUsername] = useState(false);
   const [usernameError, setUsernameError] = useState('');
 
   const [genres, setGenres] = useState<string[]>([]);
@@ -51,12 +50,8 @@ export function AppOnboarding() {
         setUsernameError('아이디와 닉네임을 모두 입력해주세요.');
         return;
       }
-      setCheckingUsername(true);
-      setTimeout(() => {
-        setUsernameError('');
-        setStep(2);
-        setCheckingUsername(false);
-      }, 500);
+      setUsernameError('');
+      setStep(2);
     } else {
       setStep(step + 1);
     }
@@ -85,7 +80,7 @@ export function AppOnboarding() {
   };
 
   const isNextDisabled = () => {
-    if (step === 1) return !username || !displayName || checkingUsername;
+    if (step === 1) return !username || !displayName;
     if (step === 2 && genres.length === 0) return true;
     if (step === 3 && accessibilities.length === 0) return true;
     return false;
@@ -125,7 +120,7 @@ export function AppOnboarding() {
                 프로필 설정
               </h1>
               <p className="text-sm font-bold text-zinc-400 mb-8 leading-relaxed">
-                403 BYPASS에서 사용할 프로필을 설정해주세요.<br/>아이디는 절대 겹칠 수 없습니다.
+                403 BYPASS에서 사용할 프로필을 설정해주세요.<br/>가입하신 아이디로 자동 연결되었습니다.
               </p>
 
               <div className="flex flex-col gap-6">
@@ -342,8 +337,8 @@ export function AppOnboarding() {
           disabled={isNextDisabled() || isSubmitting}
           className="w-full bg-cyan-400 text-black font-black py-4 rounded-xl flex justify-center items-center gap-2 hover:bg-white transition-all disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500 active:scale-[0.98]"
         >
-          {checkingUsername ? '중복 확인 중...' : isSubmitting ? '저장 중...' : step < 4 ? '다음으로' : '설정 완료하고 시작하기'}
-          {step < 4 && !checkingUsername && !isSubmitting && <ChevronRight className="w-5 h-5" />}
+          {isSubmitting ? '저장 중...' : step < 4 ? '다음으로' : '설정 완료하고 시작하기'}
+          {step < 4 && !isSubmitting && <ChevronRight className="w-5 h-5" />}
         </button>
       </div>
     </div>
