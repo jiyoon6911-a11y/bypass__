@@ -1,6 +1,6 @@
 import { Glasses, Users, ArrowRight, CheckCircle2, UserCircle2, CalendarDays, Clock, Info } from 'lucide-react';
 import React, { useState, useMemo } from 'react';
-// Removed useAuth import
+import { useProfile } from '../../lib/profile-context';
 import { BottomSheet } from '../../components/ui/BottomSheet';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -32,8 +32,7 @@ const generateCalendarDays = () => {
 };
 
 export function AppServices() {
-  // Removed useAuth
-  const profile = { displayName: '방문자' };
+  const { profile } = useProfile();
   
   const [activeService, setActiveService] = useState<'manager' | 'glasses' | null>(null);
   const [bookingModal, setBookingModal] = useState(false);

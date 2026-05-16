@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { cn } from '../../lib/utils';
 import { BottomSheet } from '../../components/ui/BottomSheet';
-// Removed useAuth import
+import { useProfile } from '../../lib/profile-context';
 
 const BASE_SHOWS = [
   { id: 1, type: '뮤지컬', title: '오페라의 유령', venue: '샤롯데씨어터', distance: '1.2km', badges: ['휠체어', '자막'], imgGradient: 'from-cyan-400/20 to-zinc-900', imgClass: 'bg-zinc-800' },
@@ -46,33 +46,24 @@ const SHOWS = [...BASE_SHOWS, ...GENERATED_SHOWS];
 
 export function AppHome() {
   const navigate = useNavigate();
-  // Removed useAuth
-  const profile = {
-    displayName: '방문자',
-    username: 'visitor',
-    onboardingCompleted: true,
-    preferences: {
-      genres: ['뮤지컬', '연극'],
-      accessibility: ['휠체어 접근성', '자막 제공'],
-      services: []
-    }
-  };
+  const { profile, updateProfile } = useProfile();
   
   const [activeTag, setActiveTag] = useState('전체');
   
   // Set initial filters based on profile preferences
-  const [filterMapPin, setFilterMapPin] = useState(
-    profile?.preferences?.accessibility?.includes('휠체어 접근성') || false
-  );
-  const [filterSubtitles, setFilterSubtitles] = useState(
-    profile?.preferences?.accessibility?.includes('자막 제공') || false
-  );
-  const [filterAudio, setFilterAudio] = useState(
-    profile?.preferences?.accessibility?.includes('음성 해설') || false
-  );
-  const [filterSignLanguage, setFilterSignLanguage] = useState(
-    profile?.preferences?.accessibility?.includes('수어 통역') || false
-  );
+  const [filterMapPin, setFilterMapPin] = useState(false);
+  const [filterSubtitles, setFilterSubtitles] = useState(false);
+  const [filterAudio, setFilterAudio] = useState(false);
+  const [filterSignLanguage, setFilterSignLanguage] = useState(false);
+
+  useEffect(() => {
+    if (profile?.preferences?.accessibility) {
+      setFilterMapPin(profile.preferences.accessibility.includes('휠체어 접근성'));
+      setFilterSubtitles(profile.preferences.accessibility.includes('자막 제공'));
+      setFilterAudio(profile.preferences.accessibility.includes('음성 해설'));
+      setFilterSignLanguage(profile.preferences.accessibility.includes('수어 통역'));
+    }
+  }, [profile]);
   const [filterVR, setFilterVR] = useState(false);
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -589,24 +580,56 @@ export function AppHome() {
           </p>
           
           <label className="flex items-center justify-between p-4 bg-zinc-800 rounded-xl border border-zinc-700 cursor-pointer hover:border-cyan-400 transition-colors">
-            <span className="font-bold">휠체어 및 스쿠터 접근</span>
-            <input type="checkbox" className="w-5 h-5 accent-cyan-400" />
+            <span className="font-bold text-white">휠체어 및 스쿠터 접근</span>
+            <input 
+              type="checkbox" 
+              className="w-5 h-5 accent-cyan-400" 
+              checked={profile.preferences.accessibility.includes('휠체어 접근성')}
+              onChange={(e) => {
+                const current = profile.preferences.accessibility;
+                const next = e.target.checked 
+                  ? [...current, '휠체어 접근성'] 
+                  : current.filter(a => a !== '휠체어 접근성');
+                updateProfile({ preferences: { ...profile.preferences, accessibility: next } });
+              }}
+            />
           </label>
           <label className="flex items-center justify-between p-4 bg-zinc-800 rounded-xl border border-zinc-700 cursor-pointer hover:border-cyan-400 transition-colors">
-            <span className="font-bold">수어 통역 / 자막</span>
-            <input type="checkbox" className="w-5 h-5 accent-cyan-400" />
+            <span className="font-bold text-white">수어 통역 / 자막</span>
+            <input 
+              type="checkbox" 
+              className="w-5 h-5 accent-cyan-400" 
+              checked={profile.preferences.accessibility.includes('자막 제공') || profile.preferences.accessibility.includes('수어 통역')}
+              onChange={(e) => {
+                const current = profile.preferences.accessibility;
+                let next = current;
+                if (e.target.checked) {
+                  next = Array.from(new Set([...current, '자막 제공', '수어 통역']));
+                } else {
+                  next = current.filter(a => a !== '자막 제공' && a !== '수어 통역');
+                }
+                updateProfile({ preferences: { ...profile.preferences, accessibility: next } });
+              }}
+            />
           </label>
           <label className="flex items-center justify-between p-4 bg-zinc-800 rounded-xl border border-zinc-700 cursor-pointer hover:border-cyan-400 transition-colors">
-            <span className="font-bold">음성 해설 단말기</span>
-            <input type="checkbox" className="w-5 h-5 accent-cyan-400" />
-          </label>
-          <label className="flex items-center justify-between p-4 bg-zinc-800 rounded-xl border border-zinc-700 cursor-pointer hover:border-cyan-400 transition-colors">
-            <span className="font-bold">눈부심/색맹 배려 화면</span>
-            <input type="checkbox" className="w-5 h-5 accent-cyan-400" defaultChecked />
+            <span className="font-bold text-white">음성 해설 단말기</span>
+            <input 
+              type="checkbox" 
+              className="w-5 h-5 accent-cyan-400" 
+              checked={profile.preferences.accessibility.includes('음성 해설')}
+              onChange={(e) => {
+                const current = profile.preferences.accessibility;
+                const next = e.target.checked 
+                  ? [...current, '음성 해설'] 
+                  : current.filter(a => a !== '음성 해설');
+                updateProfile({ preferences: { ...profile.preferences, accessibility: next } });
+              }}
+            />
           </label>
 
           <button onClick={() => { setProfileOpen(false); speak("프로필을 저장했습니다."); }} className="w-full bg-cyan-400 text-black font-black py-4 rounded-xl mt-4 hover:bg-white transition-colors">
-            프로필 저장하기
+            완료
           </button>
         </div>
       </BottomSheet>

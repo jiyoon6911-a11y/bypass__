@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// Removed useAuth import
+import { useProfile } from '../../lib/profile-context';
 import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc, orderBy, serverTimestamp } from 'firebase/firestore';
 import { Settings, LogOut, UserMinus, UserPlus, Lock, Unlock, Users, ChevronLeft, Search, UserCircle, RefreshCcw, Edit3, Music } from 'lucide-react';
@@ -9,21 +9,18 @@ import { cn } from '../../lib/utils';
 
 const GENRES = ['뮤지컬', '연극', '클래식', '콘서트', '오페라', '무용', '전통예술', '대중음악'];
 
+// Mocked data moved outside to prevent infinite re-renders
+const MOCK_USER = { uid: 'visitor' };
+
 export function AppProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
-  // Mocked user and profile
-  const user = { uid: 'visitor' };
-  const profile = { 
-    displayName: '방문자', 
-    username: 'visitor', 
-    historyPrivacy: 'public' as const,
-    photoURL: '',
-    preferences: { genres: ['뮤지컬'] }
-  };
+  const { profile, updateProfile, loading: profileLoading } = useProfile();
   
-  const isMyProfile = !userId || userId === user?.uid;
-  const targetUserId = isMyProfile ? user?.uid : userId;
+  const user = MOCK_USER; 
+  
+  const isMyProfile = !userId || userId === user.uid;
+  const targetUserId = isMyProfile ? user.uid : userId;
 
   const [targetProfile, setTargetProfile] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -49,31 +46,40 @@ export function AppProfile() {
     if (!targetUserId) return;
     
     async function loadData() {
-      setLoading(true);
-      try {
-        if (isMyProfile) {
-          setTargetProfile(profile);
-          setEditDisplayName(profile?.displayName || '');
-          setEditPhotoURL(profile?.photoURL || '');
-          setEditGenres(profile?.preferences?.genres || []);
-          const q = query(collection(db, 'reviews'), where('authorId', '==', user?.uid), orderBy('createdAt', 'desc'));
+      // For my profile, avoid setting loading state to prevent flickering
+      if (isMyProfile) {
+        setTargetProfile(profile);
+        setEditDisplayName(profile?.displayName || '');
+        setEditPhotoURL(profile?.photoURL || '');
+        setEditGenres(profile?.preferences?.genres || []);
+        
+        try {
+          const q = query(collection(db, 'reviews'), where('authorId', '==', user.uid), orderBy('createdAt', 'desc'));
           const snap = await getDocs(q);
           setReviews(snap.docs.map(d => ({id: d.id, ...d.data()})));
-        } else {
-          const docSnap = await getDoc(doc(db, 'users', targetUserId!));
-          if (docSnap.exists()) {
-            setTargetProfile(docSnap.data());
-          }
-          const followId = `${user?.uid}_${targetUserId}`;
-          const followSnap = await getDoc(doc(db, 'follows', followId));
-          setIsFollowing(followSnap.exists());
-          try {
-            const reqQuery = query(collection(db, 'reviews'), where('authorId', '==', targetUserId));
-            const revSnap = await getDocs(reqQuery);
-            setReviews(revSnap.docs.map(d => ({id: d.id, ...d.data()})));
-          } catch (err: any) {
-             setReviews([]); 
-          }
+        } catch (err) {
+          console.error('Failed to load reviews', err);
+        }
+        return;
+      }
+
+      // For other profiles, show loading
+      setLoading(true);
+      try {
+        const docSnap = await getDoc(doc(db, 'users', targetUserId!));
+        if (docSnap.exists()) {
+          setTargetProfile(docSnap.data());
+        }
+        const followId = `${user.uid}_${targetUserId}`;
+        const followSnap = await getDoc(doc(db, 'follows', followId));
+        setIsFollowing(followSnap.exists());
+        
+        try {
+          const reqQuery = query(collection(db, 'reviews'), where('authorId', '==', targetUserId));
+          const revSnap = await getDocs(reqQuery);
+          setReviews(revSnap.docs.map(d => ({id: d.id, ...d.data()})));
+        } catch (err: any) {
+           setReviews([]); 
         }
       } catch (err) {
         console.error(err);
@@ -83,7 +89,7 @@ export function AppProfile() {
     }
     
     loadData();
-  }, [targetUserId, isMyProfile, profile, user]);
+  }, [targetUserId, isMyProfile, profile.displayName, profile.photoURL, JSON.stringify(profile.preferences.genres)]);
 
   const handleSearchUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,11 +132,31 @@ export function AppProfile() {
   };
 
   const handlePrivacyChange = async (newPrivacy: 'public'|'followers'|'private') => {
-    alert('데모 모드에서는 설정을 변경할 수 없습니다.');
+    updateProfile({ historyPrivacy: newPrivacy });
+    setPrivacySetting(newPrivacy);
   };
 
   const handleSaveProfile = async () => {
-    alert('데모 모드에서는 프로필을 저장할 수 없습니다.');
+    if (!editDisplayName.trim()) return;
+    setIsSaving(true);
+    try {
+      // Simulate network
+      await new Promise(resolve => setTimeout(resolve, 800));
+      updateProfile({
+        displayName: editDisplayName.trim(),
+        photoURL: editPhotoURL,
+        preferences: {
+          ...profile.preferences,
+          genres: editGenres
+        }
+      });
+      setEditProfileOpen(false);
+    } catch (err) {
+      console.error(err);
+      alert('프로필 수정 중 오류가 발생했습니다.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
