@@ -1,12 +1,11 @@
-// Mock Firebase implementation
-export const loginWithGoogle = async () => {
-    return new Promise(resolve => setTimeout(resolve, 500));
-};
+import { initializeApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import firebaseConfig from '../../firebase-applet-config.json';
 
-export const logout = async () => {
-    localStorage.removeItem('mockLoggedIn');
-    window.location.reload();
-};
+const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const auth = getAuth(app);
 
 export enum OperationType {
   CREATE = 'create',
@@ -17,6 +16,88 @@ export enum OperationType {
   WRITE = 'write',
 }
 
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+  };
+}
+
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  console.error("Mock Firebase Error", error, operationType, path);
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
+export async function loginWithGoogle() {
+  const provider = new GoogleAuthProvider();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    
+    // Check if user exists in firestore
+    const userRef = doc(db, 'users', user.uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+      await setDoc(userRef, {
+        uid: user.uid,
+        displayName: user.displayName || 'Unknown',
+        photoURL: user.photoURL || '',
+        username: user.uid.substring(0, 8), // Default username
+        historyPrivacy: 'public',
+        onboardingCompleted: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+    }
+  } catch (err) {
+    console.error('Login error:', err);
+    throw err;
+  }
+}
+
+export async function signupWithEmail(id: string, pass: string) {
+    // We treat 'id' as 'username'. In Firebase we need email. 
+    // We can use a pattern like <id>@403bypass.app or similar if we want to support 'ID' only.
+    // But better to use email. I'll use id + "@403bypass.app" for now to satisfy "ID" requirement.
+    const email = id.includes('@') ? id : `${id}@403bypass.mock`;
+    const result = await createUserWithEmailAndPassword(auth, email, pass);
+    const user = result.user;
+    const userRef = doc(db, 'users', user.uid);
+    await setDoc(userRef, {
+        uid: user.uid,
+        displayName: id,
+        photoURL: '',
+        username: id,
+        historyPrivacy: 'public',
+        onboardingCompleted: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    });
+}
+
+export async function loginWithEmail(id: string, pass: string) {
+    const email = id.includes('@') ? id : `${id}@403bypass.mock`;
+    await signInWithEmailAndPassword(auth, email, pass);
+}
+
+export async function logout() {
+  await signOut(auth);
 }

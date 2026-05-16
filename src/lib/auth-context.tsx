@@ -1,9 +1,21 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { auth, db } from './firebase';
+import { User, onAuthStateChanged } from 'firebase/auth';
+import { doc, onSnapshot } from 'firebase/firestore';
 
-// Fake types
-export interface User { uid: string; email: string; displayName: string; photoURL: string; }
-export interface UserProfile extends User {
-  username: string; historyPrivacy: 'public' | 'followers' | 'private'; onboardingCompleted: boolean; preferences?: any;
+export interface UserProfile {
+  uid: string;
+  email: string;
+  username: string;
+  displayName: string;
+  photoURL?: string;
+  historyPrivacy: 'public' | 'followers' | 'private';
+  onboardingCompleted: boolean;
+  preferences?: {
+    genres?: string[];
+    accessibility?: string[];
+    services?: string[];
+  };
 }
 
 interface AuthContextType {
@@ -20,37 +32,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check mock logged in state
-    const currentId = localStorage.getItem('mockLoggedIn');
-    const fakeUser = currentId ? { uid: `mock_${currentId}`, email: `${currentId}@example.com`, displayName: 'Mock User', photoURL: '' } : null;
-    
-    // Simulate loading
-    setTimeout(() => {
-      if (fakeUser) {
-        setUser(fakeUser);
-        const savedProfile = localStorage.getItem(`mockProfile_${currentId}`);
-        if (savedProfile) {
-          setProfile(JSON.parse(savedProfile));
-        } else {
-          setProfile({ ...fakeUser, username: currentId as string, historyPrivacy: 'public', onboardingCompleted: false });
-        }
-      } else {
-        setUser(null);
-        setProfile(null);
+    let unsubProfile: (() => void) | undefined;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+      
+      if (unsubProfile) {
+        unsubProfile();
+        unsubProfile = undefined;
       }
-      setLoading(false);
-    }, 500);
 
-    // Provide a way to bypass update profile globally for the onboarding screen
-    (window as any).mockUpdateProfile = (newProfileData: any) => {
-      if (!currentId) return;
-      const baseUser = { uid: `mock_${currentId}`, email: `${currentId}@example.com`, displayName: 'Mock User', photoURL: '' };
-      const merged = { ...baseUser, ...newProfileData };
-      setProfile(merged);
-      localStorage.setItem(`mockProfile_${currentId}`, JSON.stringify(merged));
+      if (u) {
+        unsubProfile = onSnapshot(doc(db, 'users', u.uid), (docSnap) => {
+          if (docSnap.exists()) {
+            setProfile(docSnap.data() as UserProfile);
+          } else {
+            setProfile(null);
+          }
+          setLoading(false);
+        }, (error) => {
+          console.error("Firestore user profile snapshot error:", error);
+          setLoading(false);
+        });
+      } else {
+        setProfile(null);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubProfile) {
+        unsubProfile();
+      }
     };
-
-    return () => {};
   }, []);
 
   return (

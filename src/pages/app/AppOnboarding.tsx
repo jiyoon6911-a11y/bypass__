@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../lib/auth-context';
+import { db } from '../../lib/firebase';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, ChevronLeft, Check, Music, Accessibility, HeartHandshake, UserCircle, RefreshCcw } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -41,9 +43,6 @@ export function AppOnboarding() {
     }
   };
 
-  // Mock implementation inside since we removed Firebase
-  const mockForceUpdateProfile = (window as any).mockUpdateProfile;
-
   const handleNextStep = async () => {
     if (step === 1) {
       if (!username || !displayName) {
@@ -58,25 +57,28 @@ export function AppOnboarding() {
   };
 
   const handleComplete = async () => {
+    if (!user) return;
     setIsSubmitting(true);
-    setTimeout(() => {
-        if(mockForceUpdateProfile) {
-            mockForceUpdateProfile({
-              username,
-              displayName,
-              photoURL,
-              onboardingCompleted: true,
-              preferences: {
-                genres,
-                accessibility: accessibilities,
-                services
-              }
-            });
-        } else {
-           window.location.href = '/app';
-        }
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        username,
+        displayName,
+        photoURL,
+        onboardingCompleted: true,
+        preferences: {
+          genres,
+          accessibility: accessibilities,
+          services
+        },
+        updatedAt: serverTimestamp()
+      });
+      // Context will update automatically
+    } catch (e) {
+      console.error(e);
+      alert('설정 저장 중 오류가 발생했습니다.');
+    } finally {
       setIsSubmitting(false);
-    }, 800);
+    }
   };
 
   const isNextDisabled = () => {

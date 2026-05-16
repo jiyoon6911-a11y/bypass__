@@ -1,6 +1,6 @@
 import { Search, MapPin, Eye, AudioLines, Subtitles, ChevronRight, Bookmark, Volume2, VolumeX, HelpCircle, Navigation, Mic, MicOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { cn } from '../../lib/utils';
 import { BottomSheet } from '../../components/ui/BottomSheet';
 import { useAuth } from '../../lib/auth-context';
