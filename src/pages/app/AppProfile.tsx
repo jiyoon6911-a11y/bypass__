@@ -295,7 +295,13 @@ export function AppProfile() {
                     </span>
                   </div>
                   <p className="text-xs text-zinc-300 leading-relaxed font-medium mb-3">"{review.content}"</p>
-                  <p className="text-[10px] text-zinc-600 font-bold">작성일: {new Date(review.createdAt?.seconds * 1000).toLocaleDateString()}</p>
+                  <p className="text-[10px] text-zinc-600 font-bold">
+                    작성일: {review.createdAt?.seconds 
+                      ? new Date(review.createdAt.seconds * 1000).toLocaleDateString() 
+                      : review.createdAt instanceof Date 
+                        ? review.createdAt.toLocaleDateString()
+                        : '연동 중...'}
+                  </p>
                 </div>
               ))}
             </div>
