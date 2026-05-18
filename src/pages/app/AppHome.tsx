@@ -620,40 +620,76 @@ export function AppHome() {
       {/* Search Overlay - Full Screen "New Window" Experience */}
       {isSearchOverlayOpen && (
         <div className="fixed inset-0 z-[60] bg-black animate-in fade-in slide-in-from-bottom-5 duration-300 flex flex-col">
-          <header className="px-5 pt-12 pb-4 border-b border-zinc-900 flex items-center gap-4">
-             <button 
-               onClick={() => setIsSearchOverlayOpen(false)}
-               className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-full text-white"
-             >
-               <ChevronRight className="w-6 h-6 rotate-180" />
-             </button>
-             <div className="flex-1 relative">
-                <input 
-                  autoFocus
-                  type="text" 
-                  placeholder="어떤 공연을 찾으시나요?" 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-transparent border-none text-xl font-bold text-white placeholder:text-zinc-600 focus:outline-none"
-                />
-                {searchQuery && (
-                  <button 
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
-                  >
-                    Clear
-                  </button>
+          <header className="px-5 pt-12 pb-4 border-b border-zinc-900 flex flex-col gap-4">
+             <div className="flex items-center gap-4">
+               <button 
+                 onClick={() => setIsSearchOverlayOpen(false)}
+                 className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-full text-white"
+               >
+                 <ChevronRight className="w-6 h-6 rotate-180" />
+               </button>
+               <div className="flex-1 relative">
+                  <input 
+                    autoFocus
+                    type="text" 
+                    placeholder="어떤 공연을 찾으시나요?" 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-transparent border-none text-xl font-bold text-white placeholder:text-zinc-600 focus:outline-none"
+                  />
+                  {searchQuery && (
+                    <button 
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                    >
+                      Clear
+                    </button>
+                  )}
+               </div>
+               <button 
+                onClick={(e) => toggleListening(e)}
+                className={cn(
+                  "p-2 rounded-full transition-colors",
+                  isListening ? "bg-cyan-400 text-black scale-110" : "bg-zinc-800 text-cyan-400"
                 )}
+              >
+                {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+              </button>
              </div>
-             <button 
-              onClick={(e) => toggleListening(e)}
-              className={cn(
-                "p-2 rounded-full transition-colors",
-                isListening ? "bg-cyan-400 text-black scale-110" : "bg-zinc-800 text-cyan-400"
-              )}
-            >
-              {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
-            </button>
+
+             {/* Search View Filters */}
+             <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+                <button 
+                  onClick={() => { setFilterMapPin(!filterMapPin); speak("휠체어 접근 가능 필터" + (!filterMapPin ? " 선택" : " 해제")); }}
+                  className={cn("flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-lg border text-[10px] font-black transition-all", filterMapPin ? "bg-cyan-400 text-black border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)]" : "bg-zinc-900 border-zinc-800 text-zinc-400")}
+                >
+                  <MapPin className={cn("w-3 h-3", filterMapPin ? "text-black" : "text-cyan-400")} /> 휠체어
+                </button>
+                <button 
+                  onClick={() => { setFilterSubtitles(!filterSubtitles); speak("자막 제공 필터" + (!filterSubtitles ? " 선택" : " 해제")); }}
+                  className={cn("flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-lg border text-[10px] font-black transition-all", filterSubtitles ? "bg-cyan-400 text-black border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)]" : "bg-zinc-900 border-zinc-800 text-zinc-400")}
+                >
+                  <Subtitles className={cn("w-3 h-3", filterSubtitles ? "text-black" : "text-cyan-400")} /> 자막
+                </button>
+                <button 
+                  onClick={() => { setFilterAudio(!filterAudio); speak("음성 해설 필터" + (!filterAudio ? " 선택" : " 해제")); }}
+                  className={cn("flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-lg border text-[10px] font-black transition-all", filterAudio ? "bg-cyan-400 text-black border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)]" : "bg-zinc-900 border-zinc-800 text-zinc-400")}
+                >
+                  <AudioLines className={cn("w-3 h-3", filterAudio ? "text-black" : "text-cyan-400")} /> 음성해설
+                </button>
+                <button 
+                  onClick={() => { setFilterSignLanguage(!filterSignLanguage); speak("수어 통역 필터" + (!filterSignLanguage ? " 선택" : " 해제")); }}
+                  className={cn("flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-lg border text-[10px] font-black transition-all", filterSignLanguage ? "bg-cyan-400 text-black border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)]" : "bg-zinc-900 border-zinc-800 text-zinc-400")}
+                >
+                  <Eye className={cn("w-3 h-3", filterSignLanguage ? "text-black" : "text-cyan-400")} /> 수어통역
+                </button>
+                <button 
+                  onClick={() => { setFilterVR(!filterVR); speak("VR 시야 필터" + (!filterVR ? " 선택" : " 해제")); }}
+                  className={cn("flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-lg border text-[10px] font-black transition-all", filterVR ? "bg-cyan-400 text-black border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)]" : "bg-zinc-900 border-zinc-800 text-zinc-400")}
+                >
+                  <Navigation className={cn("w-3 h-3", filterVR ? "text-black" : "text-cyan-400")} /> VR시야
+                </button>
+             </div>
           </header>
 
           <main className="flex-1 overflow-y-auto px-5 py-6">
