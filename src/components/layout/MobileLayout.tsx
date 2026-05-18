@@ -1,9 +1,17 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
+import { useRef, useEffect } from 'react';
 import { Home, Map, HeartHandshake, Ticket, User } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export function MobileLayout() {
   const location = useLocation();
+  const scrollRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo(0, 0);
+    }
+  }, [location.pathname]);
 
   const tabs = [
     { name: '홈', path: '/app', icon: Home },
@@ -19,7 +27,7 @@ export function MobileLayout() {
       <div className="w-full max-w-md bg-black h-[100dvh] relative shadow-2xl flex flex-col overflow-hidden sm:border-x sm:border-zinc-800">
         
         {/* Main scrollable area */}
-        <main className="flex-1 overflow-y-auto pb-20 scrollbar-hide">
+        <main ref={scrollRef} className="flex-1 overflow-y-auto pb-20 scrollbar-hide">
           <Outlet />
         </main>
 

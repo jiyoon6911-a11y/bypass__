@@ -18,10 +18,10 @@ const MY_BOOKMARKS = [
 ];
 
 const PROVIDERS = [
-  { id: 'interpark', name: '인터파크 티켓', color: 'bg-red-500' },
-  { id: 'melon', name: '멜론티켓', color: 'bg-green-500' },
-  { id: 'yes24', name: 'YES24 티켓', color: 'bg-blue-500' },
-  { id: 'ticketlink', name: '티켓링크', color: 'bg-indigo-500' },
+  { id: 'interpark', name: '인터파크 티켓', color: 'bg-red-500', isLinked: true },
+  { id: 'melon', name: '멜론티켓', color: 'bg-green-500', isLinked: false },
+  { id: 'yes24', name: 'YES24 티켓', color: 'bg-blue-500', isLinked: false },
+  { id: 'ticketlink', name: '티켓링크', color: 'bg-indigo-500', isLinked: false },
 ];
 
 export function AppTickets() {
@@ -92,9 +92,20 @@ export function AppTickets() {
                   </div>
                   <div className="flex justify-between items-center text-sm font-medium">
                     <span className="text-zinc-500 text-xs font-bold w-12 shrink-0">예매처</span>
-                    <a href={ticket.url} target="_blank" rel="noreferrer" className="text-cyan-400 hover:text-white transition-colors flex items-center gap-1 font-bold bg-cyan-400/10 px-2 py-1 rounded">
-                      {ticket.source} <ExternalLink className="w-3 h-3" />
-                    </a>
+                    {ticket.source === '자체 예매처' ? (
+                      <div className="text-white flex items-center gap-1.5 font-bold bg-zinc-800 px-2 py-1 rounded">
+                        <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                        {ticket.source}
+                        <span className="text-[9px] bg-cyan-400/20 text-cyan-400 px-1 rounded ml-1">연동됨</span>
+                      </div>
+                    ) : (
+                      <a href={ticket.url} target="_blank" rel="noreferrer" className="text-cyan-400 hover:text-white transition-colors flex items-center gap-1 font-bold bg-cyan-400/10 px-2 py-1 rounded">
+                        {ticket.source === '인터파크 티켓' && <ShieldCheck className="w-3 h-3 mr-1" />}
+                        {ticket.source} 
+                        {ticket.source === '인터파크 티켓' && <span className="text-[9px] bg-cyan-400/20 px-1 rounded ml-1">연동됨</span>}
+                        <ExternalLink className="w-3 h-3 ml-1" />
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
@@ -164,7 +175,15 @@ export function AppTickets() {
                   </div>
                </div>
                <div className="shrink-0 text-right">
-                  <span className="text-[10px] font-black text-cyan-400 border border-cyan-400/30 bg-cyan-400/10 px-2 py-1 rounded">{show.source}</span>
+                  <span className={cn(
+                    "text-[10px] font-black border px-2 py-1 rounded flex items-center gap-1",
+                    show.source === '인터파크 티켓' || show.source === '자체 예매처' 
+                      ? "text-cyan-400 border-cyan-400/30 bg-cyan-400/10" 
+                      : "text-zinc-500 border-zinc-700 bg-zinc-800"
+                  )}>
+                    {(show.source === '인터파크 티켓' || show.source === '자체 예매처') && <ShieldCheck className="w-3 h-3" />}
+                    {show.source}
+                  </span>
                </div>
              </div>
           ))}
