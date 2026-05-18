@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Info, MapPin, Calendar, Users, ExternalLink, Ticket, Settings as SettingsIcon, ShieldCheck, Accessibility, Star, MessageSquare } from 'lucide-react';
+import { ChevronLeft, Info, MapPin, Calendar, Users, ExternalLink, Ticket, Settings as SettingsIcon, ShieldCheck, Accessibility, Star, MessageSquare, Maximize2, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useProfile } from '../../lib/profile-context';
+import { BottomSheet } from '../../components/ui/BottomSheet';
 
 export function AppShowDetail() {
   const { showId } = useParams();
@@ -10,6 +11,7 @@ export function AppShowDetail() {
   const { profile } = useProfile();
   
   const [vrMode, setVrMode] = useState(false);
+  const [seatModalOpen, setSeatModalOpen] = useState(false);
 
   // Mock fetching show details
   const show = {
@@ -139,25 +141,72 @@ export function AppShowDetail() {
               <span className="text-xs font-bold text-cyan-400 border border-cyan-400/30 bg-cyan-400/10 px-2 py-1 rounded-full animate-pulse">VR 연동됨</span>
             </div>
             
-            <div className="bg-zinc-900 border border-zinc-800 p-2 rounded-2xl flex flex-col items-center justify-center relative group">
-               {/* Use the attached image structurally */}
-               <div className="w-full aspect-square bg-zinc-800 rounded-xl overflow-hidden relative mb-2 flex items-center justify-center p-4">
-                 {/* Representing the lecture stage image roughly with CSS or a placeholder since we don't have the real image URI. 
-                     We will put a styling that reflects "Lecture Stage" text if possible, or an img tag that the user can map. */}
-                 <div className="text-center w-full h-full border-2 border-dashed border-zinc-700 rounded-lg flex flex-col items-center justify-center text-zinc-500 gap-3">
-                   <Info className="w-6 h-6" />
-                   <p className="text-xs font-bold">여기에 첨부된 좌석 배치도 이미지가 들어갑니다.<br/><span className="text-[10px] opacity-70">(실제 앱에서는 이미지 태그로 렌더링 됩니다)</span></p>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl flex flex-col relative overflow-hidden ring-1 ring-white/5 shadow-2xl">
+               {/* Header like the image */}
+               <div className="pt-8 pb-2 text-center">
+                  <h3 className="text-cyan-400 font-bold text-[10px] tracking-widest leading-tight">
+                    (강의실 무대)<br/>
+                    (LECTURE STAGE)
+                  </h3>
+                  <div className="absolute top-4 right-6 text-[8px] font-bold text-cyan-400/60 text-right">
+                    (앞문)<br/>
+                    (FRONT DOOR)
+                  </div>
+               </div>
+
+               {/* Interactive/Visual Seat Map Preview */}
+               <div className="w-full px-6 py-6 overflow-hidden" onClick={() => setSeatModalOpen(true)}>
+                 <div className="flex flex-col gap-1.5 w-full max-w-[340px] mx-auto border border-cyan-900/30 p-4 rounded-xl bg-black/40">
+                   {/* Rows A-K */}
+                   {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'].map((row) => (
+                     <div key={row} className="flex gap-2 justify-center items-center">
+                       <span className="text-[10px] font-black text-cyan-400/70 w-3">{row}</span>
+                       
+                       {/* Left Block 1-8 */}
+                       <div className="flex gap-0.5">
+                         {Array.from({ length: row === 'K' ? 4 : 8 }).map((_, i) => (
+                           <div key={`L-${i}`} className="w-2.5 h-3 rounded-sm border border-cyan-500/20 bg-cyan-500/5" />
+                         ))}
+                       </div>
+
+                       {/* Aisle */}
+                       <div className="w-4" />
+
+                       {/* Right Block 9-17 (skipped 13 if we follow theater logic, but image shows 9, 10, 11, 12, 14... actually image has 9-17) */}
+                       <div className="flex gap-0.5">
+                         {Array.from({ length: 8 }).map((_, i) => (
+                           <div key={`R-${i}`} className="w-2.5 h-3 rounded-sm border border-cyan-500/20 bg-cyan-500/5" />
+                         ))}
+                       </div>
+                     </div>
+                   ))}
+                   
+                   {/* Footer like the image */}
+                   <div className="mt-4 flex justify-between items-end">
+                      <div className="text-[7px] font-bold text-cyan-400/40 text-left">
+                        (뒷문)<br/>
+                        (REAR DOOR)
+                      </div>
+                      <div className="text-[7px] font-bold text-cyan-400/40 text-right">
+                        (뒷문)<br/>
+                        (REAR DOOR)
+                      </div>
+                   </div>
                  </div>
-                 
-                 {/* This overlay gradients and button will sit on top of the seat map */}
-                 <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/90 flex flex-col justify-end p-5">
-                    <button 
-                      onClick={() => setVrMode(true)}
-                      className="w-full py-4 bg-cyan-400 text-black font-black text-sm rounded-xl shadow-[0_0_30px_rgba(0,255,204,0.2)] hover:bg-cyan-300 transition-transform active:scale-95 flex items-center justify-center gap-2"
-                    >
-                      <MapPin className="w-4 h-4" /> VR/360도로 생생한 시야 확인하기
-                    </button>
-                 </div>
+
+                 <button className="mt-4 w-full flex items-center justify-center gap-2 text-[10px] font-black text-zinc-500 hover:text-white transition-colors bg-black/40 py-2 rounded-lg border border-zinc-800">
+                   <Maximize2 className="w-3 h-3" /> 배치도 크게 보기
+                 </button>
+               </div>
+               
+               {/* VR Overlay - Positioned at bottom */}
+               <div className="p-5 bg-gradient-to-t from-black via-black/80 to-transparent">
+                  <button 
+                    onClick={() => setVrMode(true)}
+                    className="w-full py-4 bg-cyan-400 text-black font-black text-sm rounded-xl shadow-[0_0_30px_rgba(0,255,204,0.3)] hover:bg-white transition-all active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <MapPin className="w-4 h-4" /> VR/360도로 생생한 시야 확인하기
+                  </button>
                </div>
             </div>
          </section>
@@ -209,18 +258,98 @@ export function AppShowDetail() {
             </div>
          </section>
 
-         {/* Booking Links directly on top */}
-         <section>
-            <h2 className="text-lg font-black mb-3">티켓 예매 등 바로가기</h2>
-            <div className="space-y-3">
-              {show.providers.map(p => (
-                 <a href="#" key={p.name} className="flex justify-between items-center bg-zinc-900 p-4 rounded-xl border border-zinc-800 hover:border-cyan-400/50 transition-colors">
-                    <span className={cn("text-xs font-black px-2 py-1 rounded inline-block border", p.color)}>{p.name}</span>
-                    <span className="flex items-center gap-1 text-xs font-bold text-white"><ExternalLink className="w-3 h-3" /> 예매하기</span>
-                 </a>
-              ))}
-            </div>
-         </section>
+        {/* Booking Links directly on top */}
+        <section>
+          <h2 className="text-lg font-black mb-3">티켓 예매 등 바로가기</h2>
+          <div className="space-y-3">
+            {show.providers.map(p => (
+              <a href="#" key={p.name} className="flex justify-between items-center bg-zinc-900 p-4 rounded-xl border border-zinc-800 hover:border-cyan-400/50 transition-colors">
+                <span className={cn("text-xs font-black px-2 py-1 rounded inline-block border", p.color)}>{p.name}</span>
+                <span className="flex items-center gap-1 text-xs font-bold text-white"><ExternalLink className="w-3 h-3" /> 예매하기</span>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        {/* Detailed Seat Map Modal */}
+        <BottomSheet isOpen={seatModalOpen} onClose={() => setSeatModalOpen(false)} title="상세 좌석 배치도">
+          <div className="bg-black p-6 rounded-2xl flex flex-col items-center relative overflow-hidden border border-zinc-800">
+             {/* Header like the image */}
+             <div className="w-full text-center mb-8 relative">
+                <h3 className="text-cyan-400 font-bold text-sm tracking-widest leading-relaxed">
+                  (강의실 무대)<br/>
+                  (LECTURE STAGE)
+                </h3>
+                <div className="absolute top-0 right-2 text-[10px] font-bold text-cyan-400/60 text-right leading-tight">
+                  (앞문)<br/>
+                  (FRONT DOOR)
+                </div>
+             </div>
+
+             {/* Seating Layout - More Detailed */}
+             <div className="w-full flex flex-col gap-2.5 max-w-sm mx-auto border-x border-t border-cyan-800/40 p-6 bg-zinc-900/30 rounded-t-3xl">
+                {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'].map((row) => (
+                  <div key={row} className="flex gap-3 justify-center items-center">
+                    <span className="text-xs font-black text-cyan-400 w-4">{row}</span>
+                    
+                    {/* Left Block */}
+                    <div className="flex gap-1">
+                      {Array.from({ length: row === 'K' ? 4 : 8 }).map((_, i) => (
+                        <div key={`L-${i}`} className="w-4 h-5 rounded-md border border-cyan-400/40 bg-cyan-400/10 flex items-center justify-center">
+                          <span className="text-[6px] text-cyan-400/80 font-bold">{i + 1}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Aisle */}
+                    <div className="w-8 border-x border-cyan-900/20 bg-cyan-900/5 h-5" />
+
+                    {/* Right Block */}
+                    <div className="flex gap-1">
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <div key={`R-${i}`} className="w-4 h-5 rounded-md border border-cyan-400/40 bg-cyan-400/10 flex items-center justify-center">
+                          <span className="text-[6px] text-cyan-400/80 font-bold">{i + 9}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Visual refinement for the aisle floor */}
+                <div className="h-4" />
+                
+                {/* Doors and Bottom borders */}
+                <div className="flex justify-between items-start pt-4 border-t border-cyan-800/40">
+                   <div className="text-[10px] font-bold text-cyan-400/60 leading-tight">
+                     (뒷문)<br/>
+                     (REAR DOOR)
+                   </div>
+                   <div className="text-[10px] font-bold text-cyan-400/60 text-right leading-tight">
+                     (뒷문)<br/>
+                     (REAR DOOR)
+                   </div>
+                </div>
+             </div>
+
+             <div className="mt-8 grid grid-cols-2 gap-4 w-full">
+                <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-xl">
+                   <p className="text-[10px] font-black text-zinc-500 mb-1">극장 정보</p>
+                   <p className="text-sm font-bold text-white">강의실 10관</p>
+                </div>
+                <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-xl">
+                   <p className="text-[10px] font-black text-zinc-500 mb-1">잔여 좌석</p>
+                   <p className="text-sm font-bold text-cyan-400">42석 / 180석</p>
+                </div>
+             </div>
+
+             <button 
+               onClick={() => setSeatModalOpen(false)}
+               className="w-full mt-6 py-4 bg-zinc-800 text-white font-black text-sm rounded-xl hover:bg-zinc-700 transition-colors"
+             >
+               닫기
+             </button>
+          </div>
+        </BottomSheet>
 
        </div>
     </div>

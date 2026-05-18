@@ -29,18 +29,32 @@ export function DeviceOS() {
       <div className="flex-1 p-6 flex flex-col items-center pt-20 z-10 relative">
         <div className="grid grid-cols-4 gap-x-6 gap-y-8 w-full max-w-sm">
            {/* User's Custom App */}
-           <button 
-             onClick={() => navigate('/app')}
-             className="flex flex-col items-center gap-2 group outline-none"
-           >
-             <div className="w-[72px] h-[72px] bg-black border border-white/20 rounded-2xl flex flex-col items-center justify-center shadow-2xl group-hover:scale-105 active:scale-95 transition-all relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-16 h-16 bg-cyan-400/30 blur-[20px] rounded-full"></div>
-                <span className="text-xs font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 to-blue-500 relative z-10 leading-tight text-center">
-                  403<br/>BY<br/>PASS
-                </span>
-             </div>
-             <span className="text-xs text-white font-medium drop-shadow-md">403 Bypass</span>
-           </button>
+            <button 
+              onClick={() => navigate('/app')}
+              className="flex flex-col items-center gap-2 group outline-none"
+            >
+              <div className="w-[72px] h-[72px] bg-zinc-900 border border-cyan-400/30 rounded-2xl flex items-center justify-center shadow-2xl group-hover:scale-105 active:scale-95 transition-all relative overflow-hidden group-hover:border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.15)]">
+                 <img 
+                   src="/logo.png" 
+                   alt="403 BYPASS App Icon" 
+                   className="w-full h-full object-cover" 
+                   onError={(e) => {
+                     (e.currentTarget as HTMLImageElement).style.display = 'none';
+                     const parent = e.currentTarget.parentElement;
+                     if (parent) {
+                       parent.className = "w-[72px] h-[72px] bg-black border border-cyan-400/30 rounded-2xl flex flex-col items-center justify-center shadow-2xl group-hover:scale-105 active:scale-95 transition-all relative overflow-hidden";
+                       parent.innerHTML = `
+                         <div class="absolute top-0 right-0 w-16 h-16 bg-cyan-400/30 blur-[20px] rounded-full"></div>
+                         <span class="text-[10px] font-black tracking-widest text-white relative z-10 leading-tight text-center">
+                           403<br/>BY<br/>PASS
+                         </span>
+                       `;
+                     }
+                   }}
+                 />
+              </div>
+              <span className="text-xs text-white font-medium drop-shadow-md">403 Bypass</span>
+            </button>
 
            {/* Dummy Apps */}
            <div className="flex flex-col items-center gap-2">

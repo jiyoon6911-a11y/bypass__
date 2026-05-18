@@ -224,10 +224,20 @@ export function AppHome() {
       {/* Top Header */}
       <header className="px-5 pt-8 pb-3 sticky top-0 bg-black/95 backdrop-blur-sm z-40 border-b border-zinc-900 flex flex-col gap-3">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl tracking-tighter" onClick={() => speak("403 바이패스 앱입니다.")}>
-            <span className="font-black bg-cyan-400 text-black px-1.5 py-0.5 mr-1 leading-none cursor-pointer">403</span>
-            <span className="font-black text-white cursor-pointer">BYPASS</span>
-          </h1>
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => speak("403 바이패스 앱입니다.")}>
+            <div className="w-10 h-10 bg-zinc-900 border border-cyan-400/30 rounded-lg flex items-center justify-center overflow-hidden shadow-[0_0_15px_rgba(34,211,238,0.2)]">
+              <img src="/logo.png" alt="BYPASS Logo" className="w-8 h-8 object-contain" onError={(e) => {
+                // Fallback to text logo if image fails
+                (e.currentTarget as HTMLImageElement).style.display = 'none';
+                const parent = e.currentTarget.parentElement;
+                if (parent) parent.innerHTML = '<span class="text-[10px] font-black text-cyan-400">BY</span>';
+              }} />
+            </div>
+            <h1 className="text-xl tracking-tighter flex flex-col -gap-1">
+              <span className="text-[10px] font-black text-cyan-400 leading-none">EVERYTAIN</span>
+              <span className="font-black text-white leading-tight">403 BYPASS</span>
+            </h1>
+          </div>
           <div className="flex gap-2">
             <button 
               onClick={toggleTTS} 
