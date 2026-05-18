@@ -1,18 +1,73 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { SHOWS } from '../../lib/show-data';
-import { ChevronLeft, Info, MapPin, Calendar, Users, ExternalLink, Ticket, Settings as SettingsIcon, ShieldCheck, Accessibility, Star, MessageSquare, Maximize2, X } from 'lucide-react';
+import { ChevronLeft, Info, MapPin, Calendar, Users, ExternalLink, Ticket, Settings as SettingsIcon, ShieldCheck, Accessibility, Star, MessageSquare, Maximize2, X, Send } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useProfile } from '../../lib/profile-context';
 import { BottomSheet } from '../../components/ui/BottomSheet';
+import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
 
 export function AppShowDetail() {
   const { showId } = useParams();
   const navigate = useNavigate();
-  const { profile } = useProfile();
+  const { user, profile } = useProfile();
   
   const [vrMode, setVrMode] = useState(false);
   const [seatModalOpen, setSeatModalOpen] = useState(false);
+  
+  const [realReviews, setRealReviews] = useState<any[]>([]);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [newReviewContent, setNewReviewContent] = useState('');
+  const [newReviewRating, setNewReviewRating] = useState(5);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Subscribe to real reviews
+  useEffect(() => {
+    if (!showId) return;
+    
+    const q = query(
+      collection(db, 'reviews'), 
+      where('showId', '==', showId), 
+      orderBy('createdAt', 'desc')
+    );
+    
+    const unsubscribe = onSnapshot(q, (snap) => {
+      setRealReviews(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (err) => {
+      handleFirestoreError(err, OperationType.LIST, 'reviews');
+    });
+    
+    return () => unsubscribe();
+  }, [showId]);
+
+  const handlePostReview = async () => {
+    if (!user || !profile) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+    if (!newReviewContent.trim()) return;
+    
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, 'reviews'), {
+        authorId: user.uid,
+        authorName: profile.displayName,
+        authorPhoto: profile.photoURL || '',
+        showId: showId,
+        showTitle: showData?.title || '',
+        rating: newReviewRating,
+        content: newReviewContent.trim(),
+        createdAt: serverTimestamp()
+      });
+      setNewReviewContent('');
+      setIsReviewModalOpen(false);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, 'reviews');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Get show details from shared data
   const showData = SHOWS.find(s => s.id.toString() === showId);
@@ -257,15 +312,45 @@ export function AppShowDetail() {
             </div>
          </section>
 
-         {/* Reviews */}
-         <section className="space-y-6">
-            <div>
-              <h2 className="text-lg font-black mb-3 flex items-center gap-2">
+          {/* Reviews */}
+          <section className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-black flex items-center gap-2">
                 <Star className="w-5 h-5 text-rose-400" />
                 공연 후기
               </h2>
-              <div className="space-y-3">
-                {show.showReviews.map(review => (
+              {user && (
+                <button 
+                  onClick={() => setIsReviewModalOpen(true)}
+                  className="text-xs font-bold text-cyan-400 bg-cyan-400/10 px-3 py-1 rounded-full border border-cyan-400/20"
+                >
+                  후기 작성
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              {/* Show real reviews from Firestore */}
+              {realReviews.length > 0 ? (
+                realReviews.map(review => (
+                  <div key={review.id} className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+                    <div className="flex justify-between items-center mb-2">
+                       <div className="flex items-center gap-2">
+                         {review.authorPhoto && <img src={review.authorPhoto} alt="" className="w-5 h-5 rounded-full object-cover" />}
+                         <span className="text-xs font-bold text-zinc-400">{review.authorName}</span>
+                       </div>
+                       <div className="flex gap-0.5">
+                         {Array.from({length: 5}).map((_, i) => (
+                           <Star key={i} className={cn("w-3 h-3", i < review.rating ? "fill-rose-400 text-rose-400" : "text-zinc-700")} />
+                         ))}
+                       </div>
+                    </div>
+                    <p className="text-sm font-medium text-white/90">{review.content}</p>
+                  </div>
+                ))
+              ) : (
+                /* Fallback to static reviews if no real ones */
+                show.showReviews.map(review => (
                   <div key={review.id} className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
                     <div className="flex justify-between items-center mb-2">
                        <span className="text-xs font-bold text-zinc-400">{review.author}</span>
@@ -277,8 +362,8 @@ export function AppShowDetail() {
                     </div>
                     <p className="text-sm font-medium text-white/90">{review.text}</p>
                   </div>
-                ))}
-              </div>
+                ))
+              )}
             </div>
 
             <div>
@@ -391,6 +476,43 @@ export function AppShowDetail() {
              </div>
           </div>
         </BottomSheet>
+
+         <BottomSheet isOpen={isReviewModalOpen} onClose={() => setIsReviewModalOpen(false)} title="후기 작성">
+            <div className="flex flex-col gap-5 py-2">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-zinc-500">별점</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <button 
+                      key={star}
+                      onClick={() => setNewReviewRating(star)}
+                      className="p-1"
+                    >
+                      <Star className={cn("w-8 h-8", star <= newReviewRating ? "fill-rose-400 text-rose-400" : "text-zinc-700")} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-zinc-500">관람 후기</label>
+                <textarea 
+                  value={newReviewContent}
+                  onChange={(e) => setNewReviewContent(e.target.value)}
+                  placeholder="공연 관람 후기를 자유롭게 남겨주세요."
+                  className="w-full h-32 bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-cyan-400/50"
+                />
+              </div>
+
+              <button 
+                onClick={handlePostReview}
+                disabled={isSubmitting || !newReviewContent.trim()}
+                className="w-full py-4 bg-cyan-400 text-black font-black rounded-xl shadow-lg disabled:opacity-50 disabled:grayscale transition-all flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? '등록 중...' : <><Send className="w-4 h-4" /> 후기 등록하기</>}
+              </button>
+            </div>
+         </BottomSheet>
        </div>
     </div>
   );

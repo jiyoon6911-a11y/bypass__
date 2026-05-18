@@ -15,12 +15,10 @@ const MOCK_USER = { uid: 'visitor' };
 export function AppProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
-  const { profile, updateProfile, loading: profileLoading } = useProfile();
+  const { user, profile, updateProfile, loading: profileLoading, signInWithGoogle, signOut } = useProfile();
   
-  const user = MOCK_USER; 
-  
-  const isMyProfile = !userId || userId === user.uid;
-  const targetUserId = isMyProfile ? user.uid : userId;
+  const isMyProfile = !userId || (user && userId === user.uid);
+  const targetUserId = isMyProfile ? user?.uid : userId;
 
   const [targetProfile, setTargetProfile] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -37,24 +35,29 @@ export function AppProfile() {
 
   // Edit Profile
   const [editProfileOpen, setEditProfileOpen] = useState(false);
-  const [editDisplayName, setEditDisplayName] = useState(profile?.displayName || '');
-  const [editPhotoURL, setEditPhotoURL] = useState(profile?.photoURL || '');
-  const [editGenres, setEditGenres] = useState<string[]>(profile?.preferences?.genres || []);
+  const [editDisplayName, setEditDisplayName] = useState('');
+  const [editPhotoURL, setEditPhotoURL] = useState('');
+  const [editGenres, setEditGenres] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (profile && editDisplayName === '') {
+      setEditDisplayName(profile.displayName || '');
+      setEditPhotoURL(profile.photoURL || '');
+      setEditGenres(profile.preferences?.genres || []);
+    }
+  }, [profile]);
 
   useEffect(() => {
     if (!targetUserId) return;
     
     async function loadData() {
-      // For my profile, avoid setting loading state to prevent flickering
-      if (isMyProfile) {
+      // For my profile
+      if (isMyProfile && profile) {
         setTargetProfile(profile);
-        setEditDisplayName(profile?.displayName || '');
-        setEditPhotoURL(profile?.photoURL || '');
-        setEditGenres(profile?.preferences?.genres || []);
         
         try {
-          const q = query(collection(db, 'reviews'), where('authorId', '==', user.uid), orderBy('createdAt', 'desc'));
+          const q = query(collection(db, 'reviews'), where('authorId', '==', user?.uid), orderBy('createdAt', 'desc'));
           const snap = await getDocs(q);
           setReviews(snap.docs.map(d => ({id: d.id, ...d.data()})));
         } catch (err) {
@@ -63,33 +66,38 @@ export function AppProfile() {
         return;
       }
 
-      // For other profiles, show loading
-      setLoading(true);
-      try {
-        const docSnap = await getDoc(doc(db, 'users', targetUserId!));
-        if (docSnap.exists()) {
-          setTargetProfile(docSnap.data());
-        }
-        const followId = `${user.uid}_${targetUserId}`;
-        const followSnap = await getDoc(doc(db, 'follows', followId));
-        setIsFollowing(followSnap.exists());
-        
+      if (!isMyProfile) {
+        // For other profiles, show loading
+        setLoading(true);
         try {
-          const reqQuery = query(collection(db, 'reviews'), where('authorId', '==', targetUserId));
-          const revSnap = await getDocs(reqQuery);
-          setReviews(revSnap.docs.map(d => ({id: d.id, ...d.data()})));
-        } catch (err: any) {
-           setReviews([]); 
+          const docSnap = await getDoc(doc(db, 'users', targetUserId!));
+          if (docSnap.exists()) {
+            setTargetProfile(docSnap.data());
+          }
+          
+          if (user) {
+            const followId = `${user.uid}_${targetUserId}`;
+            const followSnap = await getDoc(doc(db, 'follows', followId));
+            setIsFollowing(followSnap.exists());
+          }
+          
+          try {
+            const reqQuery = query(collection(db, 'reviews'), where('authorId', '==', targetUserId));
+            const revSnap = await getDocs(reqQuery);
+            setReviews(revSnap.docs.map(d => ({id: d.id, ...d.data()})));
+          } catch (err: any) {
+             setReviews([]); 
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
       }
     }
     
     loadData();
-  }, [targetUserId, isMyProfile, profile.displayName, profile.photoURL, JSON.stringify(profile.preferences.genres)]);
+  }, [targetUserId, isMyProfile, profile?.displayName, profile?.photoURL, JSON.stringify(profile?.preferences?.genres)]);
 
   const handleSearchUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,17 +140,15 @@ export function AppProfile() {
   };
 
   const handlePrivacyChange = async (newPrivacy: 'public'|'followers'|'private') => {
-    updateProfile({ historyPrivacy: newPrivacy });
+    await updateProfile({ historyPrivacy: newPrivacy });
     setPrivacySetting(newPrivacy);
   };
 
   const handleSaveProfile = async () => {
-    if (!editDisplayName.trim()) return;
+    if (!editDisplayName.trim() || !profile) return;
     setIsSaving(true);
     try {
-      // Simulate network
-      await new Promise(resolve => setTimeout(resolve, 800));
-      updateProfile({
+      await updateProfile({
         displayName: editDisplayName.trim(),
         photoURL: editPhotoURL,
         preferences: {
@@ -160,15 +166,38 @@ export function AppProfile() {
   };
 
   const handleDeleteAccount = async () => {
-    alert('데모 모드입니다.');
+    alert('탈퇴 기능은 현재 비활성화되어 있습니다.');
   };
 
-  const logout = () => {
-    navigate('/');
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/app');
   };
 
-  if (loading) {
+  if (profileLoading || (isMyProfile && !profile && user)) {
     return <div className="min-h-screen bg-black text-cyan-400 flex items-center justify-center font-bold">로딩 중...</div>;
+  }
+
+  if (!user && isMyProfile) {
+    return (
+      <div className="flex flex-col min-h-screen bg-black items-center justify-center px-10 text-center font-sans">
+        <div className="w-20 h-20 bg-zinc-900 rounded-3xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(34,211,238,0.2)]">
+          <UserCircle className="w-10 h-10 text-cyan-400" />
+        </div>
+        <h2 className="text-2xl font-black text-white mb-2">로그인이 필요합니다</h2>
+        <p className="text-zinc-400 text-sm font-medium mb-8 leading-relaxed">
+          친구들과 관람 히스토리를 공유하고<br/>나만의 공연 취향을 관리해보세요.
+        </p>
+        <button 
+          onClick={signInWithGoogle}
+          className="w-full bg-white text-black font-black py-4 rounded-xl flex justify-center items-center gap-3 hover:bg-cyan-400 transition-all shadow-xl"
+        >
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+          Google로 계속하기
+        </button>
+        <p className="mt-8 text-[10px] text-zinc-600 font-bold uppercase tracking-widest">EVERYTAIN - 403 BYPASS</p>
+      </div>
+    );
   }
 
   return (
@@ -448,7 +477,7 @@ export function AppProfile() {
              <h4 className="text-xs font-black text-zinc-500 mb-3 ml-1 tracking-widest">계정 관리</h4>
              <div className="bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800">
                 <button 
-                  onClick={() => { setSettingsOpen(false); logout(); navigate('/'); }}
+                  onClick={() => { setSettingsOpen(false); handleLogout(); }}
                   className="w-full flex items-center p-4 text-sm font-bold text-white border-b border-zinc-800 hover:bg-zinc-800 transition-colors gap-3"
                 >
                   <LogOut className="w-4 h-4 text-red-400" /> 로그아웃

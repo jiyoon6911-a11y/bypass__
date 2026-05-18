@@ -1,4 +1,4 @@
-import { Search, MapPin, Eye, AudioLines, Subtitles, ChevronRight, Bookmark, Volume2, VolumeX, HelpCircle, Navigation, Mic, MicOff } from 'lucide-react';
+import { Search, MapPin, Eye, AudioLines, Subtitles, ChevronRight, Bookmark, Volume2, VolumeX, HelpCircle, Navigation, Mic, MicOff, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { cn } from '../../lib/utils';
@@ -230,6 +230,13 @@ export function AppHome() {
               aria-label="도움말 보기"
             >
               <HelpCircle className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => { navigate('/app/profile'); speak("마이 페이지로 이동합니다."); }} 
+              className="w-8 h-8 bg-zinc-800 text-white rounded-full flex justify-center items-center transition-colors hover:bg-zinc-700"
+              aria-label="마이 프로필"
+            >
+              <User className="w-4 h-4" />
             </button>
           </div>
         </div>
